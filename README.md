@@ -1,15 +1,12 @@
 # Linkin KYC Mobile
 
-Standalone Android-first React Native application for Linkin's identity-verification workflow.
+Standalone Android-first React Native client for Linkin's identity-verification journey.
 
-## Architecture boundaries
+## Repository layout
 
-- This repository contains the mobile client only.
-- The existing Go KYC service and PostgreSQL database remain authoritative and are maintained in the separate `cognigatecloud/KYC` repository.
-- Do not create or duplicate backend services, database migrations, or verification decisions here.
-- Do not embed the KYC service bearer secret in the mobile app. The current KYC API contract is service-to-service authenticated; a trusted Linkin backend/BFF or another explicitly approved secure client-auth pattern must be resolved before direct mobile integration.
-- Do not implement mobile-number OTP. The approved app flow uses user-originated CNIC SMS to 7000 and user-consented Android SMS User Consent capture. This is evidence supplied by the user, not cryptographic proof of NADRA origin.
-- The backend remains authoritative for verification outcomes. The client must never independently declare a user verified.
+- `mobile/` — React Native TypeScript app source, package configuration and design implementation.
+- `.github/workflows/android-ci.yml` — free GitHub-hosted CI workflow. It generates the native Android project from the official React Native template, installs dependencies, type-checks, builds a debug APK, and uploads both the APK and complete generated Android project as workflow artifacts.
+- `docs/IMPLEMENTATION_STATUS.md` — implemented features and integration blockers.
 
 ## Approved 14-screen flow
 
@@ -23,57 +20,47 @@ Standalone Android-first React Native application for Linkin's identity-verifica
 8. Liveness Check
 9. Face Verification
 10. NADRA SMS Instructions
-11. Waiting / Fetch SMS
+11. Fetch SMS
 12. NADRA Response
 13. Verification Processing
-14. KYC Completion
+14. Completion
 
-No Linkin registration/login, mobile OTP, provider tools, or unrelated app functionality belongs in this standalone client.
+The app uses the supplied Linkin green-and-white design direction. It does not add Linkin registration, login, mobile OTP, provider tools, or unrelated app features.
 
-## Design direction
+## Run and download
 
-Use the approved green-and-white reference:
-- white canvas and dark text
-- green primary actions and success indicators
-- light-green secondary surfaces
-- consistent spacing, typography, cards, and buttons
-- clear document camera framing and guidance
-- restrained motion and accessible interaction states
+Every push affecting `mobile/` or the Android workflow starts GitHub Actions.
 
-## Proposed implementation stack
+Open the repository's **Actions → Linkin KYC Android CI → latest successful run → Artifacts**:
+- `linkin-kyc-debug-apk` — installable debug APK for Android device testing.
+- `linkin-kyc-android-project` — ZIP containing the generated native Android project and source; extract it locally, install Node.js/Java/Android SDK, then run `npm install` and `npm run android`.
 
-React Native + TypeScript, Android-first; React Navigation; Axios; TanStack Query; React Hook Form; React Native Vision Camera; on-device OCR; Kotlin bridge for Google Play services SMS User Consent; secure session storage; Jest and React Native Testing Library.
+GitHub-hosted `ubuntu-latest` runners are used. Public repositories currently receive free standard-runner usage, subject to GitHub's applicable Actions limits and artifact retention. The workflow does not require AWS or a self-hosted runner.
 
-Package versions and native integration choices must be checked for compatibility when the React Native application is initialized. Avoid unnecessary dependencies.
+## Architecture and security boundaries
 
-## Milestones
+- This repository is the mobile client only. The existing Go KYC service and PostgreSQL remain in the separate `cognigatecloud/KYC` repository.
+- Never embed the KYC service bearer secret in the Android app. The current KYC API is service-to-service authenticated; mobile integration requires a trusted Linkin backend/BFF or an explicitly approved user-authenticated contract.
+- The backend is authoritative. The mobile client must never independently declare a user verified.
+- Do not treat user-pasted SMS content as authenticated NADRA evidence.
+- No fingerprint capture or matching is included.
 
-1. Repository and environment inspection; API contract review; React Native foundation; navigation and design system; Android build.
-2. Screens 1–6.
-3. Screens 7–9.
-4. Screens 10–12 and Kotlin SMS User Consent integration.
-5. Screens 13–14 and pending/error/retry states.
-6. End-to-end testing against the existing backend and real Android devices.
+## Current client capabilities
 
-## Existing KYC API contract — known limitations
+- 14-step navigable experience and green/white component system.
+- Consent gate in the local UI.
+- Camera capture for CNIC front, CNIC back and face using `react-native-image-picker`.
+- Manual CNIC detail entry.
+- Opens the user's SMS app with recipient 7000 and the entered CNIC number; the user reviews and sends the SMS.
+- Development-only manual SMS response entry.
+- Clear pending states where backend/provider integrations do not exist.
 
-The current `cognigatecloud/KYC` repository documents these implemented endpoints:
-- `GET /health`, `GET /live`, `GET /ready`
-- `POST /api/v1/kyc/sessions`
-- `GET /api/v1/kyc/sessions/{session_id}`
-- `POST /api/v1/kyc/sessions/{session_id}/consent`
-- `GET /api/v1/kyc/me/status`
+## Not production-ready
 
-The backend README/OpenAPI currently lists CNIC evidence upload, OCR integration, face/liveness provider integration, NADRA SMS evidence ingestion, orchestration and final evidence processing as not yet implemented. Database tables and interfaces are not operational integrations.
+The following are still unimplemented: secure API/BFF integration, session creation and server consent recording, private evidence upload, OCR, CNIC consistency checks, face matching, liveness provider, Android SMS User Consent API bridge, NADRA response authenticity validation, backend evidence orchestration, verification polling, retention and deletion lifecycle.
 
-The backend README also still describes phone OTP as required evidence, while the approved mobile workflow excludes mobile OTP. This policy/contract discrepancy must be resolved with the backend owner before the verification pipeline is integrated. Do not silently invent endpoint paths or payloads.
+The separate KYC backend README currently states that these evidence integrations are not yet operational. It also describes phone OTP as required evidence, which conflicts with the approved mobile workflow that excludes mobile OTP. Resolve this backend policy/contract discrepancy before production integration.
 
-The OpenAPI server URL is a placeholder (`https://kyc.example.invalid`); obtain the real environment base URL from deployment configuration.
+The OpenAPI server URL is a placeholder. Obtain the real environment URL from deployment configuration. Do not send real identity documents or CNIC data through this development build.
 
-## Repository status
-
-This repository is being initialized with architecture and implementation documentation first. It is not yet a runnable React Native app. Do not label native camera, OCR, face/liveness, SMS, or backend flows as implemented until they exist and have been tested.
-
-## Local setup
-
-The React Native project bootstrap is the next foundation step. Use the project-specific setup instructions added alongside the app scaffold. Android SDK/ADB availability and a compatible Android toolchain must be verified on the developer machine before claiming an Android build passes.
+See [mobile/README.md](mobile/README.md) and [docs/IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md).
