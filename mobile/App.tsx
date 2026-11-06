@@ -49,7 +49,7 @@ function SecondaryButton({title, onPress}: {title: string; onPress: () => void})
   </Pressable>;
 }
 
-function Field({label, value, onChangeText, placeholder, keyboardType = 'default', maxLength}: {
+function Field({label, value, onChangeText, placeholder, keyboardType = 'default', maxLength, multiline = false}: {
   label: string; value: string; onChangeText: (v: string) => void; placeholder: string;
   keyboardType?: 'default' | 'numeric'; maxLength?: number; multiline?: boolean;
 }) {
@@ -133,7 +133,7 @@ function AppContent() {
       mediaType: 'photo',
       cameraType: target === 'face' ? 'front' : 'back',
       saveToPhotos: false,
-      quality: 0.85,
+      quality: 0.8,
       includeBase64: false,
     };
     try {
@@ -355,7 +355,7 @@ function AppContent() {
     }
   };
 
-  if (step === 1) return <View style={styles.root}><StatusBar barStyle="dark-content" backgroundColor="#FFFFFF"/>{body()}</View>;
+  if (step === 1) return <View style={styles.root}><StatusBar barStyle="dark-content"/>{body()}</View>;
 
   return <View style={styles.root}>
     <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF"/>
