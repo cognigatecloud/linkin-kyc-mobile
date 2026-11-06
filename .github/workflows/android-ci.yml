@@ -1,0 +1,107 @@
+name: Linkin KYC Android CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'mobile/**'
+      - 'scripts/**'
+      - '.github/workflows/android-ci.yml'
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: linkin-kyc-android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android:
+    name: Generate native project, typecheck and build debug APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: mobile/package.json
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK components
+        run: |
+          sdkmanager "platform-tools" "platforms;android-37" "build-tools;37.0.0" "ndk;27.1.12297006"
+          yes | sdkmanager --licenses
+
+      - name: Generate official React Native Android project
+        run: |
+          npx --yes @react-native-community/cli@20.2.0 init LinkinKYC \
+            --version 0.88.1 \
+            --package-name com.cognigate.linkinkyc \
+            --skip-install
+          rsync -a mobile/ LinkinKYC/
+
+      - name: Install JavaScript dependencies
+        working-directory: LinkinKYC
+        run: npm install --no-audit --no-fund
+
+      - name: Configure Android camera permission
+        working-directory: LinkinKYC
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("android/app/src/main/AndroidManifest.xml")
+          s = p.read_text()
+          marker = '<manifest xmlns:android="http://schemas.android.com/apk/res/android">'
+          if marker not in s:
+              raise SystemExit("Unexpected Android manifest template")
+          s = s.replace(marker, marker + '\n    <uses-permission android:name="android.permission.CAMERA" />', 1)
+          p.write_text(s)
+          PY
+
+      - name: TypeScript check
+        working-directory: LinkinKYC
+        run: npx tsc --noEmit
+
+      - name: Build debug APK
+        working-directory: LinkinKYC
+        run: |
+          cd android
+          ./gradlew --no-daemon assembleDebug
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: linkin-kyc-debug-apk
+          path: LinkinKYC/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Package complete generated Android project
+        run: |
+          rm -rf LinkinKYC/node_modules LinkinKYC/android/.gradle LinkinKYC/android/app/build
+          cd LinkinKYC
+          zip -qr ../linkin-kyc-android-project.zip .
+
+      - name: Upload complete Android project
+        uses: actions/upload-artifact@v4
+        with:
+          name: linkin-kyc-android-project
+          path: linkin-kyc-android-project.zip
+          if-no-files-found: error
+          retention-days: 14
