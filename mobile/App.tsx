@@ -358,7 +358,7 @@ function AppContent() {
   if (step === 1) return <View style={styles.root}><StatusBar barStyle="dark-content"/>{body()}</View>;
 
   return <View style={styles.root}>
-    <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF"/>
+    <StatusBar barStyle="dark-content"/>
     <SafeAreaView style={styles.safe} edges={['top','bottom']}>
       <StepHeader step={step} onBack={backStep}/>
       <View style={styles.progressTrack}><View style={[styles.progressFill,{width: `${(step / TOTAL) * 100}%`}]} /></View>
