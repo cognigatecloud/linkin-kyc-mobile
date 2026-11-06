@@ -51,13 +51,14 @@ function SecondaryButton({title, onPress}: {title: string; onPress: () => void})
 
 function Field({label, value, onChangeText, placeholder, keyboardType = 'default', maxLength}: {
   label: string; value: string; onChangeText: (v: string) => void; placeholder: string;
-  keyboardType?: 'default' | 'numeric'; maxLength?: number;
+  keyboardType?: 'default' | 'numeric'; maxLength?: number; multiline?: boolean;
 }) {
   return <View style={styles.fieldWrap}>
     <Text style={styles.fieldLabel}>{label}</Text>
     <TextInput value={value} onChangeText={onChangeText} placeholder={placeholder}
       placeholderTextColor="#94A3B8" keyboardType={keyboardType} maxLength={maxLength}
-      style={styles.input} autoCapitalize="none" />
+      multiline={multiline} textAlignVertical={multiline ? 'top' : 'center'}
+      style={[styles.input, multiline && styles.multilineInput]} autoCapitalize="none" />
   </View>;
 }
 
@@ -306,7 +307,7 @@ function AppContent() {
           <View style={styles.largeIcon}><Text style={styles.largeIconText}>◷</Text></View>
           <Text style={styles.heading}>Waiting for NADRA Response</Text>
           <Text style={styles.paragraph}>After sending the SMS, wait for the reply. SMS User Consent API integration is pending, so paste the received message below for this development build.</Text>
-          <Field label="SMS response" value={smsText} onChangeText={setSmsText} placeholder="Paste the SMS response here"/>
+          <Field label="SMS response" value={smsText} onChangeText={setSmsText} placeholder="Paste the SMS response here" multiline/>
           <Text style={styles.smallNote}>Do not paste OTPs or unrelated personal messages. This temporary manual entry is not an authenticated NADRA response.</Text>
           <View style={styles.flexFill}/><PrimaryButton title="Continue →" onPress={next} disabled={!smsText.trim()}/>
         </View>;
@@ -446,6 +447,7 @@ const styles = StyleSheet.create({
   fieldWrap:{marginBottom:4},
   fieldLabel:{fontSize:13,fontWeight:'700',color:'#334155',marginBottom:7},
   input:{height:48,borderWidth:1,borderColor:'#DCE7E0',borderRadius:12,paddingHorizontal:13,color:TEXT,fontSize:14,backgroundColor:'#FAFCFB'},
+  multilineInput:{height:112,paddingTop:12,paddingBottom:12},
   smsNumber:{fontSize:27,fontWeight:'900',color:GREEN,textAlign:'center',marginBottom:8},
   smsPreview:{fontSize:17,color:DARK,textAlign:'center',fontWeight:'700',padding:10,backgroundColor:'#E3F7EB',borderRadius:10},
   statusLine:{flexDirection:'row',justifyContent:'space-between',gap:12,marginBottom:12},
